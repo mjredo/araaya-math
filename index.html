@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body><div id="webnote" style="display:none;margin:0 0 10px;padding:8px 12px;border-radius:10px;background:#fff7e0;border:1px solid #f0d58a;font-size:13px">Web copy: progress saves in this browser on this device. Use the same device each time, and use <b>Parent view → Copy results</b> to send her scores to Claude.</div><script>if(!(window.claude&&window.claude.use))document.addEventListener("DOMContentLoaded",()=>{const n=document.getElementById("webnote");if(n)n.style.display="block"})</script>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body><div id="webnote" style="display:none;margin:0 0 10px;padding:8px 12px;border-radius:10px;background:#fff7e0;border:1px solid #f0d58a;font-size:13px">Website copy: progress syncs online, so she can use any browser or device. Parent view shows the sync status.</div><script>if(!(window.claude&&window.claude.use))document.addEventListener("DOMContentLoaded",()=>{const n=document.getElementById("webnote");if(n)n.style.display="block"})</script>
 <title>Araaya's Math Lab</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -4585,6 +4585,9 @@ document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)r
   if(t.id==="prev"&&S.cur.q>0){S.cur.q--;flash={};render();return}
   if(t.id==="next"&&S.cur.q<items().length-1){S.cur.q++;flash={};render();return}
   if(d.start){startRound(d.start);return}
+  if(d.exportall){copyOut(exportAll(),"xmsg","Copied. Open the other page, go to Parent view, paste it in the box and click Load progress.");return}
+  if(d.importall){const v=(document.getElementById("imptext")||{}).value||"";importAll(v).then(msg=>{renderParent();const m=document.getElementById("imsg");if(m)m.innerHTML=`<div class="fb ${/^Loaded/.test(msg)?"ok":"no"}">${msg}</div>`});return}
+  if(d.copyrec){copyOut(workRecordText(),"rmsg","Copied. Paste it into Claude.");return}
   if(d.copyres){const lines=[`${A().name} — Araaya's Math Lab results (copied ${new Date().toLocaleString()})`];S.rounds.forEach((R,i)=>{const x=roundStats(i);lines.push(`${typeName(R)}: ${R.finishedAt?x.first+"/"+x.n:R.skipped?"skipped by parent":"in progress"}${R.finishedAt&&R.startedAt?` in ${Math.round((R.finishedAt-R.startedAt)/60000)} min`:""}${R.finishedAt&&x.missed.length?" · missed: "+x.missed.map(k=>SK[k]||k).join(", "):""}`)});lines.push(`Practice-test streak: ${S.streak}/${need()}${S.proficient?" (ready)":""}`);
     const t=lines.join("\n"),m=document.getElementById("cmsg");try{navigator.clipboard.writeText(t).then(()=>{if(m)m.innerHTML=`<div class="fb ok">Copied. Paste it into Claude.</div>`},()=>{if(m)m.innerHTML=`<textarea class="in" style="width:100%;height:160px">${t}</textarea>`})}catch(e){if(m)m.innerHTML=`<textarea class="in" style="width:100%;height:160px">${t}</textarea>`}return}
   if(d.override){const c=(document.getElementById("pcode")||{}).value||"";const m=document.getElementById("pmsg");if(hash(c.trim().toUpperCase())!==PCODE&&!(PCH&&c.trim()!==""&&Number(c.trim().replace(/[−–]/g,"-"))===PCH.ans)){if(m)m.innerHTML=`<div class="fb no">That code isn't right.</div>`;return}PCH=null;parentSkip(d.override);return}
@@ -4618,13 +4621,38 @@ function renderParent(){
   h+=`</tbody></table></div><h3 class="rtitle" style="font-size:17px">Questions in ${typeName(round())}</h3><div class="tbl"><table><thead><tr><th>Q</th><th>Skill</th><th>Result</th><th>Tries</th><th>Wrong answers picked</th><th>Steps shown</th></tr></thead><tbody>`;
   const lab={first:"Right first try",guided:"Solved with steps",working:"Still working",new:"Not started"};
   items().forEach(it=>{const s=ist(it.id);h+=`<tr><td><b>${it.label}</b></td><td>${SK[it.skill]}</td><td class="st ${s.status}">${lab[s.status]}</td><td>${s.tries||0}</td><td>${(s.wrong||[]).join(" · ")||"—"}</td><td>${(s.revealed||[]).length}</td></tr>`});
-  h+=`</tbody></table></div><p class="note">${db?"Progress is saved to this page, so it carries across devices and Claude can read it to plan next week.":"Progress shown is from this device only."} “Steps shown” counts steps where she missed three times and the page showed that step.</p>`;
+  h+=`</tbody></table></div><p class="note">${SYNC.mode==="claude"?"Progress is saved to this page, so it carries across devices and Claude can read it to plan next week.":SYNC.mode==="web"?(SYNC.err?"⚠ Couldn't reach the sync service just now ("+SYNC.err+"). Progress is saved on this browser and will sync when it's back.":"Progress syncs online, so it carries over to any browser"+(SYNC.last?" (last synced "+new Date(SYNC.last).toLocaleTimeString()+")":"")+"."):"Progress is saved on this browser only (online sync isn't set up yet)."} “Steps shown” counts steps where she missed three times and the page showed that step.</p>`;
   const mid=isMid(),T3=mid?"practice tests":"timed tests";
   h+=`<div class="card override"><h3 class="rtitle" style="font-size:17px">Parent override</h3><p class="note">Move ${A().name} to a later step without finishing the current one. This needs the parent code.${(S.overrides||[]).length?` Used ${(S.overrides||[]).length} time(s) here: ${(S.overrides||[]).map(o=>o.to+" ("+new Date(o.at).toLocaleDateString()+")").join(", ")}.`:""}</p>
   <p class="note">Type the parent code, <b>or</b> answer this parent check: ${(PCH||newPCH(),PCH).q}</p><div class="answer"><input class="in" id="pcode" type="password" autocomplete="off" placeholder="Code or answer" aria-label="Parent code or answer"></div>
   <div class="actions"><button class="btn ghost" data-override="strengthen">Skip to 10-question rounds</button><button class="btn ghost" data-override="test">Skip to ${T3}</button><button class="btn ghost" data-override="ready">Mark as ${mid?"ready":"mastered"}</button></div><div id="pmsg"></div></div>`;
-  h+=`<div class="card"><h3 class="rtitle" style="font-size:17px">Send results to Claude</h3><p class="note">Copies a short summary of every round in ${A().name} so you can paste it into Claude (useful when she practices on the web copy, where Claude can't see her progress).</p><div class="actions"><button class="btn ghost" data-copyres="1">Copy results</button></div><div id="cmsg"></div></div>`;
+  h+=`<div class="card"><h3 class="rtitle" style="font-size:17px">Send results to Claude</h3><p class="note">Copies a short summary of every round in ${A().name} so you can paste it into Claude.</p><div class="actions"><button class="btn ghost" data-copyres="1">Copy results</button></div><div id="cmsg"></div></div>`;
+  h+=workRecordHTML();
+  h+=`<div class="card"><h3 class="rtitle" style="font-size:17px">Move progress between the Claude page and the website</h3><p class="note">The Claude page and the website keep separate records. To bring everything into one place: on the page that has the work, click <b>Copy all progress</b>; on the other page, paste it below and click <b>Load progress</b>. Newer work always wins, so nothing she's done is overwritten by an older copy.</p>
+  <div class="actions"><button class="btn ghost" data-exportall="1">Copy all progress</button></div><div id="xmsg"></div>
+  <textarea class="in" id="imptext" style="width:100%;height:90px;margin-top:8px" placeholder="Paste copied progress here"></textarea><div class="actions"><button class="btn ghost" data-importall="1">Load progress</button></div><div id="imsg"></div></div>`;
   document.getElementById("parent").innerHTML=h}
+// ---------- Work record: everything she's done, for cumulative test prep ----------
+function workRecord(){const tests=[],skills={};
+  for(const a of ASSESS){const st=STORE[a.id];if(!st||!st.rounds||untouched(st))continue;
+    const fin=st.rounds.map((R,i)=>[R,i]).filter(x=>x[0].finishedAt);const t0=Math.min(...st.rounds.map(R=>R.startedAt||Infinity));
+    const tl=fin.filter(x=>x[0].type==="test").map(x=>roundStats(x[1],st,a.id));const first=fin.find(x=>x[0].type==="main");
+    tests.push({id:a.id,name:a.name,topic:a.topic,started:isFinite(t0)?t0:null,last:st.updatedAt,rounds:fin.length,first:first?roundStats(first[1],st,a.id):null,tests:tl.map(x=>x.first+"/"+x.n),proficient:!!st.proficient,mid:a.kind==="mid"});
+    st.rounds.forEach((R,ri)=>{itemsFor(st,a.id,ri).forEach(it=>{const s=R.items[it.id];if(!s||!(s.status==="first"||s.status==="guided"))return;const k=it.skill;const x=skills[k]||(skills[k]={n:0,first:0,last:null,lastAt:0});x.n++;if(s.status==="first")x.first++;const t=R.finishedAt||st.updatedAt||0;if(t>=x.lastAt){x.lastAt=t;x.last=s.status==="first"}})})}
+  tests.sort((a,b)=>(a.started||0)-(b.started||0));return{tests,skills}}
+const LORD=l=>{const m=String(l||"").match(/(\d+)-(\d+)/);return m?(+m[1])*100+(+m[2]):9999};
+function workRecordHTML(){const W=workRecord();const d=t=>t?new Date(t).toLocaleDateString(undefined,{month:"short",day:"numeric"}):"—";
+  let h=`<div class="card"><h3 class="rtitle" style="font-size:17px">Work record (for cumulative tests)</h3><p class="note">Every quiz and test she has worked on, and how she does on each skill across all of them. Cumulative tests use this to pick re-test questions.</p>
+  <div class="tbl"><table><thead><tr><th>Quiz / test</th><th>Dates</th><th>Rounds</th><th>First test</th><th>Practice / timed tests</th><th>Status</th></tr></thead><tbody>${W.tests.map(t=>`<tr><td>${t.name}</td><td>${d(t.started)} – ${d(t.last)}</td><td>${t.rounds}</td><td>${t.first?t.first.first+"/"+t.first.n:"—"}</td><td>${t.tests.join(", ")||"—"}</td><td>${t.proficient?(t.mid?"Ready":"Mastered"):"In progress"}</td></tr>`).join("")||`<tr><td colspan="6">Nothing yet.</td></tr>`}</tbody></table></div>`;
+  const ks=Object.keys(W.skills).sort((a,b)=>LORD(LESSON[a])-LORD(LESSON[b]));
+  h+=`<details><summary>Skills (${ks.length})</summary><div class="tbl"><table><thead><tr><th>Lesson</th><th>Skill</th><th>Questions</th><th>Right first try</th><th>Last time</th></tr></thead><tbody>${ks.map(k=>{const x=W.skills[k];const pct=Math.round(x.first/x.n*100);return`<tr><td>${LESSON[k]||"—"}</td><td>${SK[k]||k}</td><td>${x.n}</td><td>${pct}%${pct<70?" ⚠":""}</td><td>${x.last?"✓ right":"✗ needed steps"} (${d(x.lastAt)})</td></tr>`}).join("")}</tbody></table></div></details>
+  <div class="actions"><button class="btn ghost" data-copyrec="1">Copy work record for Claude</button></div><div id="rmsg"></div></div>`;return h}
+function workRecordText(){const W=workRecord();const d=t=>t?new Date(t).toISOString().slice(0,10):"—";const L=[`Araaya's Math Lab work record (copied ${new Date().toLocaleString()})`,"","Quizzes and tests:"];
+  W.tests.forEach(t=>L.push(`- ${t.name} (${d(t.started)} to ${d(t.last)}): ${t.rounds} rounds; first test ${t.first?t.first.first+"/"+t.first.n:"—"}; tests ${t.tests.join(", ")||"—"}; ${t.proficient?(t.mid?"ready":"mastered"):"in progress"}`));
+  L.push("","Skills (lesson | skill | questions | right first try | last time):");
+  Object.keys(W.skills).sort((a,b)=>LORD(LESSON[a])-LORD(LESSON[b])).forEach(k=>{const x=W.skills[k];L.push(`- ${LESSON[k]||"—"} | ${SK[k]||k} | ${x.n} | ${Math.round(x.first/x.n*100)}% | ${x.last?"right":"needed steps"} ${d(x.lastAt)}`)});return L.join("\n")}
+function copyOut(t,boxId,okMsg){const m=document.getElementById(boxId);const esc=t.replace(/&/g,"&amp;").replace(/</g,"&lt;");const fallback=()=>{if(m)m.innerHTML=`<p class="note">Your browser blocked copying. Select all the text below and copy it.</p><textarea class="in" style="width:100%;height:120px">${esc}</textarea>`};
+  try{navigator.clipboard.writeText(t).then(()=>{if(m)m.innerHTML=`<div class="fb ok">${okMsg}</div>`},fallback)}catch(e){fallback()}}
 function showTab(id){const map={tabPractice:"practice",tabCourse:"course",tabParent:"parent"};for(const k in map){const on=k===id;document.getElementById(map[k]).hidden=!on;document.getElementById(k).setAttribute("aria-pressed",String(on))}
   document.getElementById("stages").hidden=id!=="tabPractice";if(id!=="tabPractice")document.getElementById("prep").hidden=true;else renderPrep();if(id==="tabParent"){PCH=null;renderParent()}if(id==="tabCourse")renderCourse()}
 function statusOf(id){const st=STORE[id];if(!st||!st.rounds)return{cls:"new",txt:"Not started"};
@@ -4663,17 +4691,44 @@ function renderPrep(){const el=document.getElementById("prep");if(!el)return;con
     return`<li class="${done?"done":now?"now":""}"><span class="pday">Step ${k+1}</span><span class="pgoal">${d.goal}</span><span class="pact">${done?"✓ Done":now?(CUR===PREP_ID?"← now":`<button class="btn sm" data-open="${PREP_ID}">Start</button>`):""}</span></li>`}).join("")}</ol>`}
 if(!lsGet("mathlab3:t4mid-intro")){lsSet("mathlab3:current",PREP_ID);lsSet("mathlab3:t4mid-intro",1);lsSet("mathlab3:t3chx-intro",1);lsSet("mathlab3:t3mid-intro",1)}
 loadLocal();open(CUR);render();
-(async()=>{try{db=await window.claude?.use?.("db")}catch(e){db=null}if(!db)return;
-  try{const snap=await db.collection("progress").get();let hasT2=false;
-    snap.docs.forEach(d=>{const v=d.data();if(!v||!v.json)return;let st;try{st=JSON.parse(v.json)}catch(e){return}const id=v.id||(d.id==="oct26"?"T2-Q2":d.id);if(!AM(id))return;if(id==="T2-Q2")hasT2=true;st.id=id;
-      if(!STORE[id]||(v.updatedAt||0)>(STORE[id].updatedAt||0)){STORE[id]=st;lsSet("mathlab2:"+storeKey(id),st)}});
-    if(!hasT2){const prev=CUR;open("T2-Q2");const rs=await db.collection("results").where("week","==","oct26").get();let ch=false;
+// ---------- progress sync on any browser (Cloudflare Worker; used when the page isn't running inside Claude) ----------
+const SYNC_URL_DEFAULT="https://araaya-math-sync.mrnarang.workers.dev";
+function syncUrl(){try{return(localStorage.getItem("mathlab:syncurl")||SYNC_URL_DEFAULT).replace(/\/+$/,"")}catch(e){return SYNC_URL_DEFAULT}}
+let SYNC={mode:"local",last:null,err:null};
+function remoteDb(base){
+  const req=async(method,path,body)=>{const r=await fetch(base+path,{method,headers:body?{"Content-Type":"application/json"}:{},body:body?JSON.stringify(body):undefined,cache:"no-store"});
+    if(r.status===409)return r.json();if(!r.ok)throw new Error("sync "+r.status);SYNC.last=Date.now();SYNC.err=null;return r.json()};
+  return{collection:name=>({get:async()=>{const rows=await req("GET","/c/"+name);return{docs:rows.map(x=>({id:x.id,data:()=>x.data}))}}}),
+    doc:path=>({set:async obj=>{const [c,id]=path.split("/");try{return await req("PUT","/d/"+c+"/"+encodeURIComponent(id),obj)}catch(e){SYNC.err=String(e.message||e);throw e}}})}}
+// a state she hasn't touched yet (fresh browser) never replaces saved progress
+function untouched(st){return!st||!st.rounds||(st.rounds.length===1&&!Object.values(st.rounds[0].items||{}).some(x=>x&&x.tries))}
+async function pushState(id,st){if(!db)return;try{await db.doc("progress/"+storeKey(id)).set({id,json:JSON.stringify(st),updatedAt:st.updatedAt,streak:st.streak,rounds:st.rounds.length,proficient:st.proficient})}catch(e){}}
+async function pullProgress(){if(!db)return false;let changed=false;
+  const snap=await db.collection("progress").get();
+  snap.docs.forEach(d=>{const v=d.data();if(!v||!v.json)return;let st;try{st=JSON.parse(v.json)}catch(e){return}const id=v.id||(d.id==="oct26"?"T2-Q2":d.id);if(!AM(id))return;st.id=id;
+    const loc=STORE[id];if(!loc||untouched(loc)&&!untouched(st)||(v.updatedAt||0)>(loc.updatedAt||0)){STORE[id]=st;lsSet("mathlab2:"+storeKey(id),st);changed=true}});
+  // push anything this browser has that's newer than what's saved
+  for(const id in STORE){const st=STORE[id];if(untouched(st))continue;const key=storeKey(id);const rv=snap.docs.find(d=>d.id===key||(d.data()||{}).id===id);const ru=rv?(rv.data().updatedAt||0):-1;
+    if((st.updatedAt||0)>ru)await pushState(id,st)}
+  return changed}
+// Move progress between the Claude page and the website (Parent view → Copy all progress / Load progress)
+function exportAll(){const out={app:"araaya-mathlab",at:Date.now(),store:{}};for(const id in STORE){if(!untouched(STORE[id]))out.store[id]=STORE[id]}return JSON.stringify(out)}
+async function importAll(text){let o;try{o=JSON.parse(text.trim())}catch(e){return"That doesn't look like copied progress. Copy it again and paste the whole thing."}
+  if(!o||o.app!=="araaya-mathlab"||!o.store)return"That doesn't look like Araaya's Math Lab progress.";let n=0,k=0;
+  for(const id in o.store){const st=o.store[id];if(!AM(id)||!st||!st.rounds)continue;st.id=id;const loc=STORE[id];
+    if(!loc||untouched(loc)||(st.updatedAt||0)>(loc.updatedAt||0)){STORE[id]=st;lsSet("mathlab2:"+storeKey(id),st);await pushState(id,st);n++}else k++}
+  ITEMS={};S=STORE[CUR]||S;return`Loaded ${n} quiz/test record(s)${k?`; kept ${k} that were already newer here`:""}.`}
+(async()=>{let cdb=null;try{cdb=await window.claude?.use?.("db")}catch(e){cdb=null}
+  if(cdb){db=cdb;SYNC.mode="claude"}else if(syncUrl()){db=remoteDb(syncUrl());SYNC.mode="web"}else return;
+  try{await pullProgress();
+    if(SYNC.mode==="claude"&&!STORE["T2-Q2"]){const prev=CUR;open("T2-Q2");const rs=await db.collection("results").where("week","==","oct26").get();let ch=false;
       rs.docs.forEach(x=>{const r=x.data();if(!r)return;const s=ist(r.qid,S.rounds[0]);
         if(s.status==="new"&&(r.status==="first"||r.status==="guided")){Object.assign(s,{status:r.status,tries:r.tries||1,wrong:(r.wrong||[]).map(plain),final:r.final||""});ch=true}
         else if(s.status==="new"&&r.status==="working"){Object.assign(s,{status:"working",tries:r.tries||1,wrong:(r.wrong||[]).map(plain),guide:true,step:0});ch=true}});
       if(ch){const c=S.cur;S.cur={r:0,q:c.q};finishRoundIfDone();S.cur=c;save()}open(prev)}
-    ITEMS={};S=STORE[CUR];render()}catch(e){}})();
-
+    ITEMS={};S=STORE[CUR];render()}catch(e){SYNC.err=String(e.message||e)}
+  if(SYNC.mode==="web")document.addEventListener("visibilitychange",async()=>{if(document.visibilityState!=="visible")return;try{if(await pullProgress()){ITEMS={};S=STORE[CUR];flash={};render()}}catch(e){}});
+})();
 </script>
 
 </body></html>
