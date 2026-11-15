@@ -142,7 +142,7 @@ select.in{width:auto;max-width:100%;font-size:16px}
     <div class="tabs">
       <button class="tab" id="tabPractice" aria-pressed="true">Practice</button>
       <button class="tab" id="tabCourse" aria-pressed="false">All quizzes &amp; tests</button>
-      <button class="tab" id="tabParent" aria-pressed="false">Parent view</button>
+      <button class="tab" id="tabGraded" aria-pressed="false">Graded tests</button><button class="tab" id="tabParent" aria-pressed="false">Parent view</button>
     </div>
   </header>
   <div class="card prep" id="prep" hidden></div>
@@ -157,7 +157,7 @@ select.in{width:auto;max-width:100%;font-size:16px}
     </div>
   </div>
   <div id="course" class="card" hidden></div>
-  <div id="parent" class="card parent" hidden></div>
+  <div id="graded" class="card" hidden></div><div id="parent" class="card parent" hidden></div>
 </div>
 
 <script>
@@ -4401,6 +4401,10 @@ function skillsOf(lessons){return [...new Set(lessons.flatMap(l=>LESSON_SKILLS[l
 function assessTitle(A){const ls=A.lessons;return A.kind==="cumulative"?`${A.name} · ${ls.length} lessons`:`${A.name} · Lessons ${ls[0]} to ${ls[ls.length-1]} · ${COURSE.find(t=>t.t===A.topic).name}`}
 
 let CUR="T2-Q2",STORE={},S=null,db=null,flash={},ITEMS={},timerId=null;
+// Graded tests from school. Claude adds an entry to GRADED_FEEDBACK after reviewing an upload (key = upload id):
+// {title,date,score,reviewedOn,summary,missed:[{q,skill,note}],right:[skill],next}. missed/right feed re-tests and the work record.
+const GRADED_FEEDBACK={};
+let GRADED=[];   // upload records from the sync service (website only)
 const A=()=>AM(CUR);
 function newState(){return{v:3,id:CUR,rounds:[{no:0,type:"main",startedAt:Date.now(),items:{}}],streak:0,best:0,proficient:false,cur:{r:0,q:0},updatedAt:0}}
 function lsGet(k){try{return JSON.parse(localStorage.getItem(k)||"null")}catch(e){return null}}
@@ -4419,6 +4423,7 @@ let syncT=null;function queueSync(){if(!db)return;clearTimeout(syncT);const key=
 function weakSkills(excludeSkills){const ev=[];
   for(const id in STORE){const st=STORE[id];if(!st||!st.rounds)continue;st.rounds.forEach((R,ri)=>{const its=itemsFor(st,id,ri);const t=R.finishedAt||st.updatedAt||0;
     its.forEach(it=>{const s=R.items[it.id];if(s&&(s.status==="first"||s.status==="guided"))ev.push([t,it.skill,s.status==="first"])})})}
+  for(const g of gradedReviewed()){const t=Date.parse(g.date+"T15:00:00")||0;(g.right||[]).forEach(k=>ev.push([t,k,true]));(g.missed||[]).forEach(m=>ev.push([t,m.skill,false]))}
   ev.sort((a,b)=>a[0]-b[0]);const last={},when={};ev.forEach(([t,k,ok])=>{last[k]=ok;when[k]=t});
   return Object.keys(last).filter(k=>!last[k]&&!excludeSkills.includes(k)&&G[k]).sort((a,b)=>when[b]-when[a])}
 
@@ -4585,6 +4590,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)r
   if(t.id==="prev"&&S.cur.q>0){S.cur.q--;flash={};render();return}
   if(t.id==="next"&&S.cur.q<items().length-1){S.cur.q++;flash={};render();return}
   if(d.start){startRound(d.start);return}
+  if(d.gupload){uploadGraded();return}
   if(d.exportall){copyOut(exportAll(),"xmsg","Copied. Open the other page, go to Parent view, paste it in the box and click Load progress.");return}
   if(d.importall){const v=(document.getElementById("imptext")||{}).value||"";importAll(v).then(msg=>{renderParent();const m=document.getElementById("imsg");if(m)m.innerHTML=`<div class="fb ${/^Loaded/.test(msg)?"ok":"no"}">${msg}</div>`});return}
   if(d.copyrec){copyOut(workRecordText(),"rmsg","Copied. Paste it into Claude.");return}
@@ -4595,7 +4601,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("button");if(!t)r
   if(d.ins){const inp=document.getElementById(d.ins);if(inp){const ch=inp.dataset.supmode==="1"&&d.ch==="−"?"⁻":d.ch;const a=inp.selectionStart??inp.value.length,b=inp.selectionEnd??a;inp.setRangeText(ch,a,b,"end");inp.focus()}return}
   if(d.checkstep!==undefined){const i=+d.checkstep;checkStep(i,(document.getElementById("s"+i)||{}).value||"");return}
   if(d.pick){const k=+d.i;if(d.pick==="main")pickMain(k);else if(d.pick[0]==="p")pickPlan(+d.pick.slice(1),k);else checkStep(+d.pick.slice(1),k);return}
-  if(t.id==="tabPractice"||t.id==="tabParent"||t.id==="tabCourse"){showTab(t.id);return}
+  if(t.id==="tabPractice"||t.id==="tabParent"||t.id==="tabCourse"||t.id==="tabGraded"){showTab(t.id);return}
   if(d.open){open(d.open);showTab("tabPractice");render();window.scrollTo({top:0});return}
   if(d.cum){const sel=document.getElementById("cumSel");if(sel){open("CUM-"+sel.value);showTab("tabPractice");render();window.scrollTo({top:0})}return}
 });
@@ -4649,12 +4655,15 @@ function workRecordHTML(){const W=workRecord();const d=t=>t?new Date(t).toLocale
   <div class="actions"><button class="btn ghost" data-copyrec="1">Copy work record for Claude</button></div><div id="rmsg"></div></div>`;return h}
 function workRecordText(){const W=workRecord();const d=t=>t?new Date(t).toISOString().slice(0,10):"—";const L=[`Araaya's Math Lab work record (copied ${new Date().toLocaleString()})`,"","Quizzes and tests:"];
   W.tests.forEach(t=>L.push(`- ${t.name} (${d(t.started)} to ${d(t.last)}): ${t.rounds} rounds; first test ${t.first?t.first.first+"/"+t.first.n:"—"}; tests ${t.tests.join(", ")||"—"}; ${t.proficient?(t.mid?"ready":"mastered"):"in progress"}`));
+  const GR=[...GRADED.map(g=>Object.assign({},g,{fb:GRADED_FEEDBACK[g.id]})),...gradedReviewed().filter(f=>!GRADED.some(g=>g.id===f.id)).map(f=>Object.assign({},f,{fb:f}))];
+  L.push("","School tests uploaded (Graded tests tab):");if(!GR.length)L.push("- none yet");
+  GR.forEach(g=>L.push(`- [${g.id}] ${g.title} (${g.date})${g.score?" score "+g.score:""}; ${(g.files||[]).length} file(s)${(g.files||[]).length?": "+g.files.map(f=>fileUrl(f.id)).join(" "):""}; ${g.fb?"reviewed; missed: "+((g.fb.missed||[]).map(x=>(x.q?x.q+" ":"")+(SK[x.skill]||x.skill)).join(", ")||"none"):"NOT REVIEWED YET"}${g.notes?"; notes: "+g.notes:""}`));
   L.push("","Skills (lesson | skill | questions | right first try | last time):");
   Object.keys(W.skills).sort((a,b)=>LORD(LESSON[a])-LORD(LESSON[b])).forEach(k=>{const x=W.skills[k];L.push(`- ${LESSON[k]||"—"} | ${SK[k]||k} | ${x.n} | ${Math.round(x.first/x.n*100)}% | ${x.last?"right":"needed steps"} ${d(x.lastAt)}`)});return L.join("\n")}
 function copyOut(t,boxId,okMsg){const m=document.getElementById(boxId);const esc=t.replace(/&/g,"&amp;").replace(/</g,"&lt;");const fallback=()=>{if(m)m.innerHTML=`<p class="note">Your browser blocked copying. Select all the text below and copy it.</p><textarea class="in" style="width:100%;height:120px">${esc}</textarea>`};
   try{navigator.clipboard.writeText(t).then(()=>{if(m)m.innerHTML=`<div class="fb ok">${okMsg}</div>`},fallback)}catch(e){fallback()}}
-function showTab(id){const map={tabPractice:"practice",tabCourse:"course",tabParent:"parent"};for(const k in map){const on=k===id;document.getElementById(map[k]).hidden=!on;document.getElementById(k).setAttribute("aria-pressed",String(on))}
-  document.getElementById("stages").hidden=id!=="tabPractice";if(id!=="tabPractice")document.getElementById("prep").hidden=true;else renderPrep();if(id==="tabParent"){PCH=null;renderParent()}if(id==="tabCourse")renderCourse()}
+function showTab(id){const map={tabPractice:"practice",tabCourse:"course",tabGraded:"graded",tabParent:"parent"};for(const k in map){const on=k===id;document.getElementById(map[k]).hidden=!on;document.getElementById(k).setAttribute("aria-pressed",String(on))}
+  document.getElementById("stages").hidden=id!=="tabPractice";if(id!=="tabPractice")document.getElementById("prep").hidden=true;else renderPrep();if(id==="tabParent"){PCH=null;renderParent()}if(id==="tabGraded")renderGraded();if(id==="tabCourse")renderCourse()}
 function statusOf(id){const st=STORE[id];if(!st||!st.rounds)return{cls:"new",txt:"Not started"};
   const dots=Array.from({length:needOf(id)},(_,i)=>`<span class="sdot ${i<st.streak?"on":""}"></span>`).join("");const mid=(AM(id)||{}).kind==="mid";
   if(st.proficient)return{cls:"first",txt:`${mid?"Ready":"Mastered"} <span class="streak">${dots}</span>`};
@@ -4711,6 +4720,39 @@ async function pullProgress(){if(!db)return false;let changed=false;
   for(const id in STORE){const st=STORE[id];if(untouched(st))continue;const key=storeKey(id);const rv=snap.docs.find(d=>d.id===key||(d.data()||{}).id===id);const ru=rv?(rv.data().updatedAt||0):-1;
     if((st.updatedAt||0)>ru)await pushState(id,st)}
   return changed}
+// ---------- Graded tests from school: uploads (website) + Claude's feedback ----------
+// Claude adds an entry here after reviewing an upload (key = upload id). missed/right use skill ids; they feed re-tests and the work record.
+function gradedReviewed(){return Object.entries(GRADED_FEEDBACK).map(([id,f])=>Object.assign({id},f))}
+async function loadGraded(){if(SYNC.mode!=="web"||!db)return;try{const snap=await db.collection("graded").get();GRADED=snap.docs.map(d=>Object.assign({id:d.id},d.data())).filter(g=>!g.removed).sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.uploadedAt||0)-(a.uploadedAt||0))}catch(e){}}
+function gradedOptions(){const o=[];for(const T of COURSE){if(T.t<1)continue;o.push(`Topic ${T.t} Quiz 1`,`Topic ${T.t} Quiz 2`,`Topic ${T.t} Mid-Chapter Test`,`Topic ${T.t} Chapter Test`)}o.push("Semester cumulative test","Year-end cumulative test","Other (describe in notes)");return o}
+function fileUrl(fid){return syncUrl()+"/f/"+encodeURIComponent(fid)}
+function feedbackHTML(f){const sk=k=>`${SK[k]||k}${LESSON[k]?` (${LESSON[k]})`:""}`;return`<div class="fb ok" style="text-align:left"><b>Claude's review${f.reviewedOn?" ("+f.reviewedOn+")":""}:</b> ${f.summary||""}
+  ${(f.missed||[]).length?`<div style="margin-top:6px"><b>Needs work:</b><ul style="margin:4px 0 0 18px">${f.missed.map(m=>`<li>${m.q?`<b>${m.q}</b> `:""}${sk(m.skill)}${m.note?` — ${m.note}`:""}</li>`).join("")}</ul></div>`:""}
+  ${(f.right||[]).length?`<div style="margin-top:6px"><b>Solid:</b> ${[...new Set(f.right)].map(sk).join(", ")}</div>`:""}${f.next?`<div style="margin-top:6px"><b>Next:</b> ${f.next}</div>`:""}</div>`}
+function renderGraded(){const el=document.getElementById("graded");if(!el)return;const web=SYNC.mode==="web";const today=todayISO();
+  let h=`<h3 class="rtitle">Graded tests from school</h3><p class="note">Upload photos or PDFs of her graded quizzes and tests. Claude reviews each one, matches every missed question to a skill, and writes feedback here. Those skills then show up as re-test questions in her next quizzes and in the cumulative tests.</p>`;
+  if(web){h+=`<div class="card"><div class="answer" style="flex-wrap:wrap;gap:8px"><label for="gTitle">Which test</label><select id="gTitle" class="in">${gradedOptions().map(x=>`<option${x===(A()||{}).name?" selected":""}>${x}</option>`).join("")}</select></div>
+    <div class="answer" style="flex-wrap:wrap;gap:8px"><label for="gDate">Date taken</label><input id="gDate" class="in" type="date" value="${today}"><label for="gScore">Score</label><input id="gScore" class="in" placeholder="e.g. 18/22" style="width:110px"></div>
+    <div class="answer" style="flex-wrap:wrap;gap:8px"><label for="gNotes">Notes</label><input id="gNotes" class="in" placeholder="Optional, e.g. teacher's comments" style="flex:1;min-width:200px"></div>
+    <div class="answer" style="flex-wrap:wrap;gap:8px"><label for="gFiles">Photos / PDF</label><input id="gFiles" type="file" accept="image/*,application/pdf" multiple></div>
+    <p class="note">Take a photo of each page, or pick a scanned PDF. Photos are shrunk before upload.</p><div class="actions"><button class="btn" data-gupload="1">Upload</button></div><div id="gmsg"></div></div>`}
+  else h+=`<p class="note">Uploading works on the website (<a href="https://mjredo.github.io/araaya-math/">mjredo.github.io/araaya-math</a>), which works on any phone or computer.</p>`;
+  const fbIds=new Set(Object.keys(GRADED_FEEDBACK));const rows=[...GRADED.map(g=>Object.assign({},g,{fb:GRADED_FEEDBACK[g.id]})),...gradedReviewed().filter(f=>!GRADED.some(g=>g.id===f.id)).map(f=>({id:f.id,title:f.title,date:f.date,score:f.score,notes:f.notes,files:[],fb:f}))];
+  rows.sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+  h+=`<h3 class="rtitle" style="font-size:17px">Uploaded tests (${rows.length})</h3>`+(rows.length?rows.map(g=>`<div class="card"><div><b>${g.title||"Test"}</b> · ${g.date||""}${g.score?` · score <b>${g.score}</b>`:""}</div>${g.notes?`<p class="note">${String(g.notes).replace(/</g,"&lt;")}</p>`:""}
+    ${(g.files||[]).length&&web?`<p class="note">${g.files.map((f,i)=>`<a href="${fileUrl(f.id)}" target="_blank" rel="noopener">${f.type==="application/pdf"?"PDF":"Page"} ${i+1}</a>`).join(" · ")}</p>`:""}
+    ${g.fb?feedbackHTML(g.fb):`<div class="note">Waiting for Claude's review. Ask Claude to "review Araaya's uploaded tests".</div>`}</div>`).join(""):`<p class="note">Nothing uploaded yet.</p>`);
+  el.innerHTML=h}
+async function shrinkImage(file){if(!/^image\/(jpeg|png|webp)$/.test(file.type))return file;try{const bmp=await createImageBitmap(file);const m=2000,sc=Math.min(1,m/Math.max(bmp.width,bmp.height));if(sc===1&&file.size<1500000)return file;
+  const c=document.createElement("canvas");c.width=Math.round(bmp.width*sc);c.height=Math.round(bmp.height*sc);c.getContext("2d").drawImage(bmp,0,0,c.width,c.height);const b=await new Promise(r=>c.toBlob(r,"image/jpeg",0.85));return b?new File([b],file.name.replace(/\.\w+$/,"")+".jpg",{type:"image/jpeg"}):file}catch(e){return file}}
+async function uploadGraded(){const m=document.getElementById("gmsg"),say=(t,ok)=>{if(m)m.innerHTML=`<div class="fb ${ok?"ok":"no"}">${t}</div>`};
+  const files=[...((document.getElementById("gFiles")||{}).files||[])];if(!files.length)return say("Pick at least one photo or PDF first.");
+  const id="g"+Date.now().toString(36);const meta={id,title:document.getElementById("gTitle").value,date:document.getElementById("gDate").value||todayISO(),score:document.getElementById("gScore").value.trim(),notes:document.getElementById("gNotes").value.trim(),files:[],uploadedAt:Date.now(),updatedAt:Date.now()};
+  try{for(let i=0;i<files.length;i++){say(`Uploading ${i+1} of ${files.length}…`,true);const f=await shrinkImage(files[i]);const type=f.type||(/\.pdf$/i.test(f.name)?"application/pdf":"");const fid=`${id}-${i+1}`;
+      const r=await fetch(fileUrl(fid),{method:"PUT",headers:{"Content-Type":type,"X-File-Name":encodeURIComponent(f.name)},body:f});if(!r.ok)throw new Error(r.status===413?`${files[i].name} is too large (max 15 MB)`:r.status===415?`${files[i].name} isn't a photo or PDF`:"upload failed ("+r.status+")");
+      meta.files.push({id:fid,name:f.name,type,size:f.size})}
+    await db.doc("graded/"+id).set(meta);await loadGraded();renderGraded();pushRecord();const m2=document.getElementById("gmsg");if(m2)m2.innerHTML=`<div class="fb ok">Uploaded ${meta.files.length} file(s). Ask Claude to review it.</div>`}
+  catch(e){say("Couldn't upload: "+String(e.message||e)+". Check the connection and try again.")}}
 // readable work record for Claude: results/record (WebFetch <worker>/c/results)
 let recT=null;function pushRecord(){if(!db)return;clearTimeout(recT);recT=setTimeout(async()=>{try{await db.doc("results/record").set({text:workRecordText(),current:CUR,updatedAt:new Date().toISOString()})}catch(e){}},1500)}
 // Move progress between the Claude page and the website (Parent view → Copy all progress / Load progress)
@@ -4722,7 +4764,7 @@ async function importAll(text){let o;try{o=JSON.parse(text.trim())}catch(e){retu
   ITEMS={};S=STORE[CUR]||S;return`Loaded ${n} quiz/test record(s)${k?`; kept ${k} that were already newer here`:""}.`}
 (async()=>{let cdb=null;try{cdb=await window.claude?.use?.("db")}catch(e){cdb=null}
   if(cdb){db=cdb;SYNC.mode="claude"}else if(syncUrl()){db=remoteDb(syncUrl());SYNC.mode="web"}else return;
-  try{await pullProgress();pushRecord();
+  try{await pullProgress();await loadGraded();pushRecord();
     if(SYNC.mode==="claude"&&!STORE["T2-Q2"]){const prev=CUR;open("T2-Q2");const rs=await db.collection("results").where("week","==","oct26").get();let ch=false;
       rs.docs.forEach(x=>{const r=x.data();if(!r)return;const s=ist(r.qid,S.rounds[0]);
         if(s.status==="new"&&(r.status==="first"||r.status==="guided")){Object.assign(s,{status:r.status,tries:r.tries||1,wrong:(r.wrong||[]).map(plain),final:r.final||""});ch=true}
