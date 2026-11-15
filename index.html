@@ -4557,7 +4557,7 @@ function renderSummary(){
 function finishRoundIfDone(){const R=round();if(R.finishedAt||!roundDone())return;R.finishedAt=Date.now();const st=roundStats(S.cur.r);
   if(R.type==="test"){if(st.perfect&&(A().timeRef||st.dur<=A().min*60)){S.streak++;S.best=Math.max(S.best,S.streak);if(S.streak>=need())S.proficient=true}else{S.streak=0}}
   if(R.type==="strengthen"){S.sstreak=strPass(S.cur.r)?(S.sstreak||0)+1:0}else S.sstreak=0;
-  if(db){db.doc(`rounds/${storeKey(CUR)}_${R.no}`).set({week:storeKey(CUR),assessment:CUR,no:R.no,type:R.type,name:typeName(R),first:st.first,total:st.n,missed:st.missed,durationSec:st.dur,streakAfter:S.streak,finishedAt:new Date(R.finishedAt).toISOString()}).catch(()=>{})}}
+  if(db){pushRecord();db.doc(`rounds/${storeKey(CUR)}_${R.no}`).set({week:storeKey(CUR),assessment:CUR,no:R.no,type:R.type,name:typeName(R),first:st.first,total:st.n,missed:st.missed,durationSec:st.dur,streakAfter:S.streak,finishedAt:new Date(R.finishedAt).toISOString()}).catch(()=>{})}}
 function startRound(type){const prev=round(S.rounds.length-1),st=roundStats(S.rounds.length-1);let base=null,again=null;
   if(type==="again"){type="strengthen";again=(prev.base||prev.skills||[]).slice()}
   let skills=type==="strengthen"?(again||st.missed.slice()):null;if(type==="strengthen")base=again||(prev.type==="strengthen"?(prev.base||prev.skills):skills.slice());if(type==="strengthen"&&(prev.type==="test"||isMid()))skills=skills.filter(k=>skillsOf(A().lessons).includes(k));if(type==="strengthen"&&!skills.length)type="test";
@@ -4711,6 +4711,8 @@ async function pullProgress(){if(!db)return false;let changed=false;
   for(const id in STORE){const st=STORE[id];if(untouched(st))continue;const key=storeKey(id);const rv=snap.docs.find(d=>d.id===key||(d.data()||{}).id===id);const ru=rv?(rv.data().updatedAt||0):-1;
     if((st.updatedAt||0)>ru)await pushState(id,st)}
   return changed}
+// readable work record for Claude: results/record (WebFetch <worker>/c/results)
+let recT=null;function pushRecord(){if(!db)return;clearTimeout(recT);recT=setTimeout(async()=>{try{await db.doc("results/record").set({text:workRecordText(),current:CUR,updatedAt:new Date().toISOString()})}catch(e){}},1500)}
 // Move progress between the Claude page and the website (Parent view → Copy all progress / Load progress)
 function exportAll(){const out={app:"araaya-mathlab",at:Date.now(),store:{}};for(const id in STORE){if(!untouched(STORE[id]))out.store[id]=STORE[id]}return JSON.stringify(out)}
 async function importAll(text){let o;try{o=JSON.parse(text.trim())}catch(e){return"That doesn't look like copied progress. Copy it again and paste the whole thing."}
@@ -4720,7 +4722,7 @@ async function importAll(text){let o;try{o=JSON.parse(text.trim())}catch(e){retu
   ITEMS={};S=STORE[CUR]||S;return`Loaded ${n} quiz/test record(s)${k?`; kept ${k} that were already newer here`:""}.`}
 (async()=>{let cdb=null;try{cdb=await window.claude?.use?.("db")}catch(e){cdb=null}
   if(cdb){db=cdb;SYNC.mode="claude"}else if(syncUrl()){db=remoteDb(syncUrl());SYNC.mode="web"}else return;
-  try{await pullProgress();
+  try{await pullProgress();pushRecord();
     if(SYNC.mode==="claude"&&!STORE["T2-Q2"]){const prev=CUR;open("T2-Q2");const rs=await db.collection("results").where("week","==","oct26").get();let ch=false;
       rs.docs.forEach(x=>{const r=x.data();if(!r)return;const s=ist(r.qid,S.rounds[0]);
         if(s.status==="new"&&(r.status==="first"||r.status==="guided")){Object.assign(s,{status:r.status,tries:r.tries||1,wrong:(r.wrong||[]).map(plain),final:r.final||""});ch=true}
