@@ -1452,6 +1452,13 @@ const T3CH_FIRST=[...T3MID_FIRST,["t3_solve","scale"],["t3_solve","map"],["t3_de
 const T3CH_TEST=[["1","t3_record","shots"],["2","t3_unitrate","wage"],["3","t3_unitrate","compare"],["4","t3_ratio","simplify"],["5","t3_ratecheck","goal"],["6","t3_fractotal","time"],["7","t3_fractotal","recipe"],["8","t3_mixedrate","compare"],["9","t3_fraccompare","faster"],["10","t3_proptest","money"],
  ["11a","t3_crossmult","den"],["11b","t3_crossmult","decimal"],["12","t3_propmissing","howmany"],["13","t3_convert","up"],["14","t3_constk","dozen"],["15","t3_constk","table"],["16","t3_proptest","fee"],["17","t3_useeq","word"],["18","t3_graph","eqn"],["19","t3_graph","meaning"],["20","t3_graphpts","plot"],["21","t3_graph","ispro"],
  ["22","t3_solve","scale"],["23","t3_solve","map"],["24","t3_solve","recipe"],["25","t3_deal","savings"],["26","t3_deal","budget"]];
+// Topic 4 Mid-Chapter Test prep (lessons 4-1 to 4-3, test Fri Nov 20 2026). Teacher's practice quiz not in yet: the practice test follows the lesson skills; re-layout when it arrives.
+const T4MID_FIRST=[["t4_pctof","basic"],["t4_pctof","over100"],["t4_pctof","under1"],["t4_pctof","word"],["t4_convert","todec"],["t4_convert","fromdec"],["t4_convert","tofrac"],
+ ["t4_prop","setup"],["t4_prop","whole"],["t4_prop","pct"],["t4_propword","whole"],["t4_propword","pct"],["t4_propword","part"],
+ ["t4_eq","write"],["t4_eq","whole"],["t4_eq","pct"],["t4_eq","word"],["t4_tax","tax"],["t4_tax","tip"],["t4_tax","commission"]];
+const T4MID_TEST=[["1","t4_pctof","basic"],["2","t4_pctof","over100"],["3","t4_pctof","under1"],["4","t4_pctof","word"],["5a","t4_convert","todec"],["5b","t4_convert","fromdec"],["5c","t4_convert","tofrac"],
+ ["6","t4_prop","setup"],["7","t4_prop","whole"],["8","t4_prop","pct"],["9","t4_propword","part"],["10","t4_propword","whole"],["11","t4_propword","pct"],
+ ["12","t4_eq","write"],["13","t4_eq","whole"],["14","t4_eq","pct"],["15","t4_eq","word"],["16","t4_tax","tax"],["17","t4_tax","tip"],["18","t4_tax","commission"]];
 function midFirstSpecs(id){const L=(AM(id)||{}).firstL||T3MID_FIRST;return L.map(([g,v],i)=>({id:`r0-${i+1}`,label:String(i+1),gen:g,o:{v},seed:`${id}-first-${i}`}))}
 function midTestSpecs(id,no){const L=(AM(id)||{}).testL||T3MID_TEST;return L.map(([lab,g,v])=>({id:`r${no}-${lab}`,label:lab,gen:g,o:{v},seed:`${id}-r${no}-t-${lab}`}))}
 
@@ -1609,11 +1616,11 @@ t4_tax(r,o){const v=o.v||pick(r,VARS.t4_tax);
     return T4it("t4_tax",o.lvl||"Word",`A ${it} costs ${T4m(P)}. The sales tax rate is ${fmt(rt)}%. What is the total cost, including tax?${round?" (Round the tax to the nearest cent.)":""}`,T4m(P+tax),
       [[T4m(tax),"That's only the tax. Add it to the price."],[T4m(P+rt),`That adds ${fmt(rt)} dollars, not ${fmt(rt)}%.`],[T4m(P+P*rt/10),`Check the decimal: ${fmt(rt)}% is ${fmt(rt)} hundredths.`],[T4m(P-tax),"Sales tax is added to the price, not taken off."]],two(r,P,rt,"tax","Tax","Add the tax to the price",round),r)}
   if(v==="tip"){const B=o.B??pick(r,[36,48,52,64,45,80,28,72,54,90]),t=o.t??pick(r,[15,18,20,25]),tip=T4c(B*t/100),askTip=o.ask??r()<0.4;
-    if(askTip)return T4it("t4_tax",o.lvl||"Word",`A family's restaurant bill is ${T4m(B)}. They want to leave a ${t}% tip. How much is the tip?`,T4m(tip),[[T4m(B+tip),"That's the bill plus the tip. The question asks for just the tip."],[T4m(B*t/10),`Check the decimal: ${t}% is ${t} hundredths.`],[T4m(t),`${t}% is not ${t} dollars.`],[T4m(B-tip),"That takes the tip away from the bill."]],
+    if(askTip)return T4it("t4_tax",o.lvl||"Word",`A family's restaurant bill is ${T4m(B)}. They want to leave ${/^(8|11|18|80)/.test(String(t))?"an":"a"} ${t}% tip. How much is the tip?`,T4m(tip),[[T4m(B+tip),"That's the bill plus the tip. The question asks for just the tip."],[T4m(B*t/10),`Check the decimal: ${t}% is ${t} hundredths.`],[T4m(t),`${t}% is not ${t} dollars.`],[T4m(B-tip),"That takes the tip away from the bill."]],
       [stp(r,{p:"How do we find the tip?",good:`Multiply the bill by ${t}% written as a decimal`,bad:[[`Divide the bill by ${t}`,`That finds 1/${t} of the bill, not ${t}%.`],[`Add ${t} to the bill`,"A percent tip is a part of the bill, not a number of dollars."]],t:`Tip = ${fmt(t/100)} × ${T4m(B)}.`,a:`${t}% as a decimal = ?`,ans:t/100})],r);
-    return T4it("t4_tax",o.lvl||"Word",`A restaurant bill is ${T4m(B)}. ${pick(r,T4nm)} leaves a ${t}% tip. What is the total, including the tip?`,T4m(B+tip),[[T4m(tip),"That's only the tip. Add it to the bill."],[T4m(B+t),`That adds ${t} dollars, not ${t}%.`],[T4m(B+B*t/10),`Check the decimal: ${t}% is ${t} hundredths.`],[T4m(B-tip),"A tip is added to the bill."]],two(r,B,t,"tip","Tip","Add the tip to the bill",false),r)}
+    return T4it("t4_tax",o.lvl||"Word",`A restaurant bill is ${T4m(B)}. ${pick(r,T4nm)} leaves ${/^(8|11|18|80)/.test(String(t))?"an":"a"} ${t}% tip. What is the total, including the tip?`,T4m(B+tip),[[T4m(tip),"That's only the tip. Add it to the bill."],[T4m(B+t),`That adds ${t} dollars, not ${t}%.`],[T4m(B+B*t/10),`Check the decimal: ${t}% is ${t} hundredths.`],[T4m(B-tip),"A tip is added to the bill."]],two(r,B,t,"tip","Tip","Add the tip to the bill",false),r)}
   const base=o.base??pick(r,[300,350,400,450,500,250]),S=o.S??pick(r,[2400,3600,4500,5200,8000,1250,6400,3000]),c=o.c??pick(r,[3,4,5,6,8,10,2.5,7.5]),com=T4c(S*c/100),nm=pick(r,T4nm);
-  return T4it("t4_tax",o.lvl||"Word",`${nm} sells phones. ${nm} earns ${T4m(base)} per week plus a ${fmt(c)}% commission on sales. This week ${nm} sold ${T4m(S)} worth of phones. How much did ${nm} earn this week?`,T4m(base+com),
+  return T4it("t4_tax",o.lvl||"Word",`${nm} sells phones. ${nm} earns ${T4m(base)} per week plus ${/^(8|11|18|80)/.test(fmt(c))?"an":"a"} ${fmt(c)}% commission on sales. This week ${nm} sold ${T4m(S)} worth of phones. How much did ${nm} earn this week?`,T4m(base+com),
     [[T4m(com),"That's only the commission. Add the weekly pay too."],[T4m(base+S*c/10),`Check the decimal: ${fmt(c)}% is ${fmt(c)} hundredths.`],[T4m(S+base),"Commission is a percent of the sales, not all of the sales."],[T4m(base*(1+c/100)),"The commission is a percent of the SALES, not of the weekly pay."]],
     two(r,S,c,"commission","Commission","Add the commission to the weekly pay",false).map((s,i)=>i===1?stp(r,{p:"Now that we know the commission, what's next?",good:`Add it to the ${T4m(base)} weekly pay`,bad:[["Subtract it from the weekly pay","Commission is extra money earned."],["Stop. The commission is the answer","The question asks for total earnings."]],t:`Earnings = ${T4m(base)} + commission.`}):s),r)},
 
@@ -1658,7 +1665,7 @@ t4_markup(r,o){const v=o.v||pick(r,VARS.t4_markup);const it=pick(r,["lamp","jack
 t4_original(r,o){const v=o.v||pick(r,VARS.t4_original);const it=pick(r,["scooter","jacket","tablet case","guitar","pair of boots","desk chair"]);
   const sale=v==="sale",O=o.O??pick(r,sale?[40,60,80,120,25,50,36,48,90,150,200]:[12,16,20,24,30,40,60,80,45]),p=o.p??pick(r,sale?[10,20,25,30,40,50,15,60]:[20,25,40,50,60,75,100]);
   const S=RD(O*(1+(sale?-p:p)/100)),pc=sale?100-p:100+p,dd=RD(pc/100);
-  const q=sale?`After a ${p}% discount, a ${it} costs ${T4m(S)}. What was the original price?`:`A store marks up the price of a ${it} by ${p}% and sells it for ${T4m(S)}. How much did the store pay for it?`;
+  const q=sale?`After ${/^(8|11|18|80)/.test(String(p))?"an":"a"} ${p}% discount, a ${it} costs ${T4m(S)}. What was the original price?`:`A store marks up the price of a ${it} by ${p}% and sells it for ${T4m(S)}. How much did the store pay for it?`;
   const bad=sale?[[T4m(S*(1+p/100)),`That adds ${p}% of the SALE price. The discount was ${p}% of the original price, which is bigger.`],[T4m(S+p),`The discount was ${p}%, not ${p} dollars.`],[T4m(S/(p/100)),`The sale price is ${pc}% of the original, not ${p}%.`],[T4m(S*(1-p/100)),"That takes off a second discount. The original price is MORE than the sale price."]]
     :[[T4m(S*(1-p/100)),`That takes ${p}% of the SELLING price off. The markup was ${p}% of the cost, which is smaller.`],[T4m(S-p),`The markup was ${p}%, not ${p} dollars.`],[T4m(S/(p/100)),`The selling price is ${pc}% of the cost, not ${p}%.`],[T4m(S*(1+p/100)),"That adds another markup. The cost is LESS than the selling price."]];
   return T4it("t4_original",o.lvl||"Challenge",q,T4m(O),bad,[
@@ -2008,7 +2015,7 @@ t5_equivctx(r,o){const v=o.v||pick(r,VARS.t5_equivctx);
         bads(good,[[[2,b+2*w],"Distribute the 2 to BOTH terms in the parentheses."],[[1,b+w],"A rectangle has two lengths and two widths."],[[2,2*b+w],"There are two widths, so the width is doubled."],[[2+2*b,2*w],"x and "+b+" aren't like terms."]],XC),
         [stp(r,{p:"How do we simplify 2(x + "+b+") + 2 · "+w+"?",good:"Distribute the 2, then combine the constants",bad:[["Add 2 + x first","Multiply before adding."],["Only multiply x by 2","The 2 multiplies every term inside."]],t:`2(x + ${b}) = 2x + ${2*b}.`,a:`${2*b} + 2 · ${w} = ?`,ans:2*b+2*w})],r)}
     const p=pick(r,[8,12,15,18,20,25]),dp=RD(p/100),cf=RD(1+dp);
-    return item("t5_equivctx","Word",`A meal costs p dollars. Sam adds a ${p}% tip and writes the total as p + ${fmt(dp)}p. Which expression is equivalent?`,`${fmt(cf)}p`,[[`${fmt(dp)}p`,"That's only the tip. The meal is part of the total."],[`p + ${p}`,`The tip is ${p}% OF p, not ${p} dollars.`],[`${fmt(RD(2*dp))}p`,"p by itself means 1p, not "+fmt(dp)+"p."]],
+    return item("t5_equivctx","Word",`A meal costs p dollars. Sam adds ${/^(8|11|18|80)/.test(String(p))?"an":"a"} ${p}% tip and writes the total as p + ${fmt(dp)}p. Which expression is equivalent?`,`${fmt(cf)}p`,[[`${fmt(dp)}p`,"That's only the tip. The meal is part of the total."],[`p + ${p}`,`The tip is ${p}% OF p, not ${p} dollars.`],[`${fmt(RD(2*dp))}p`,"p by itself means 1p, not "+fmt(dp)+"p."]],
       [stp(r,{p:"p + "+fmt(dp)+"p has two like terms. What is the coefficient of p by itself?",good:"1, because p = 1p",bad:[["0","p is one whole p."],[fmt(dp),"Each term has its own coefficient."]],t:"Combine like terms by adding their coefficients.",a:`1 + ${fmt(dp)} = ?`,ans:cf})],r)}
   const k=int(r,2,6),b=int(r,2,9),a=int(r,2,9),a2=int(r,2,9),c=int(r,10,15);
   const EQ=[`${k}(x + ${b}) and ${k}x + ${k*b}`,`${c} − (x + ${b}) and −x + ${c-b}`,`${a}x + ${a2}x + ${b} and ${a+a2}x + ${b}`,`−${k}(x − ${b}) and −${k}x + ${k*b}`];
@@ -3043,7 +3050,7 @@ t9_forms(r,o){const v=o.v||pick(r,VARS.t9_forms);
       [stp(r,{p:"How do we change a fraction to a percent?",good:"Divide top by bottom, then multiply by 100",bad:[["Put a % sign after the top number","The bottom number changes the value too."],["Multiply top and bottom by 100","That gives an equivalent fraction, not a percent."]],t:`First ${n} ÷ ${d}.`,a:`${n} ÷ ${d} = ?`,ans:n/d}),
        stp(r,{p:"We have a decimal. What turns it into a percent?",good:"Multiply by 100 (move the decimal point 2 places right)",bad:[["Multiply by 10","Percent means per hundred."],["Divide by 100","That makes it smaller. Going to a percent makes the number 100 times bigger."]],t:"Then add the % sign.",a:`${fmt(n/d)} × 100 = ?`,ans:pc})],r)}
   if(v==="todec"){let p=int(r,1,99);if(p===50)p=pick(r,[35,65]);
-    return t9I("t9_forms","Basic",`There is a ${p}% chance of an event. Which decimal shows the same probability?`,fmt(p/100),
+    return t9I("t9_forms","Basic",`There is ${/^(8|11|18|80)/.test(String(p))?"an":"a"} ${p}% chance of an event. Which decimal shows the same probability?`,fmt(p/100),
       [[fmt(p/10),"Percent means per hundred, so divide by 100, not 10."],[fmt(p/1000),"That moves the decimal point 3 places. Divide by 100."],[fmt(1-p/100),"That's the chance the event does NOT happen."],[fmt(p),"Just dropping the % sign makes it bigger than 1, and a probability can't be bigger than 1."]],
       [stp(r,{p:"How do we change a percent to a decimal?",good:"Divide by 100 (move the decimal point 2 places left)",bad:[["Divide by 10","Percent means per hundred."],["Just remove the % sign","That makes the number 100 times too big."]],t:`${p}% means ${p} out of 100.`,a:`${p} ÷ 100 = ?`,ans:p/100})],r)}
   // valid: which can NOT be a probability
@@ -4373,6 +4380,7 @@ for(const T of COURSE){const L=T.lessons.map(l=>l[0]);
   ASSESS.push({id:`T${T.t}-Q1`,topic:T.t,kind:"quiz",name:`Topic ${T.t} Quiz 1`,lessons:T.q1,n:20,min:30});
   ASSESS.push({id:`T${T.t}-Q2`,topic:T.t,kind:"quiz",name:`Topic ${T.t} Quiz 2`,lessons:T.q2,n:20,min:30});
   ASSESS.push({id:`T${T.t}-CH`,topic:T.t,kind:"chapter",name:`Topic ${T.t} Chapter Test`,lessons:L,n:25,min:40})}
+ASSESS.push({id:"T4-MID",topic:4,kind:"mid",card:"Mid-Chapter Test",name:"Topic 4 Mid-Chapter Test",lessons:["4-1","4-2","4-3"],span:"4-1 to 4-3",teacher:"the 4-1 to 4-3 lesson skills (teacher\u2019s practice quiz to be added)",firstL:T4MID_FIRST,testL:T4MID_TEST,n:T4MID_TEST.length,first:T4MID_FIRST.length,min:40,need:2,strNeed:2,retests:3,timeRef:true,date:"2026-11-20"});
 ASSESS.push({id:"T3-CHX",topic:3,kind:"mid",card:"Chapter Test prep",name:"Topic 3 Chapter Test",lessons:["3-1","3-2","3-3","3-4","3-5","3-6"],span:"3-1 to 3-6",teacher:"the 3.1–3.5 practice quiz, plus lesson 3-6 problems",firstL:T3CH_FIRST,testL:T3CH_TEST,n:T3CH_TEST.length,first:T3CH_FIRST.length,min:45,need:2,strNeed:2,retests:3,timeRef:true,date:"2026-11-13"});
 ASSESS.push({id:"T3-MID",topic:3,kind:"mid",card:"Mid-Chapter Test",span:"3-1 to 3-5",teacher:"the teacher's Practice Quiz 3.1–3.5",firstL:T3MID_FIRST,testL:T3MID_TEST,name:"Topic 3 Mid-Chapter Test",lessons:["3-1","3-2","3-3","3-4","3-5"],n:T3MID_TEST.length,first:T3MID_FIRST.length,min:40,need:2,strNeed:2,retests:3,timeRef:true});
 ASSESS.push({id:"T2-WU",topic:2,kind:"warmup",name:"Unit 2 Warm-up",lessons:COURSE.find(t=>t.t===2).lessons.map(l=>l[0]),n:10,min:15});
@@ -4637,8 +4645,8 @@ function renderCourse(){
     <div class="arow">${cums.filter(a=>STORE[a.id]).map(a=>{const s=statusOf(a.id);return`<button class="acard" data-open="${a.id}"><span class="aname">${a.name}</span><span class="st ${s.cls}">${s.txt}</span></button>`}).join("")}</div></section>`;
   document.getElementById("course").innerHTML=h}
 
-// ---------- Test prep panel: follows the newest prep assessment (Topic 3 Chapter Test, Fri Nov 13 2026) ----------
-const PREP_ID="T3-CHX";
+// ---------- Test prep panel: follows the newest prep assessment (Topic 4 Mid-Chapter Test, Fri Nov 20 2026) ----------
+const PREP_ID="T4-MID";
 function midInfo(){const st=STORE[PREP_ID];const R=(st&&st.rounds)||[];
   const firstPerfect=!!(R[0]&&R[0].finishedAt&&roundStats(0,st,PREP_ID).perfect);
   return{firstDone:!!(R[0]&&R[0].finishedAt),strDone:R.some(x=>x.type==="test")||firstPerfect||!!(st&&(st.sstreak||0)>=2),test1:!!(st&&(st.streak>=1||st.proficient)),ready:!!(st&&st.proficient)}}
@@ -4653,7 +4661,7 @@ function renderPrep(){const el=document.getElementById("prep");if(!el)return;con
   const dl=new Date(a.date+"T12:00:00").toLocaleDateString(undefined,{weekday:"long",month:"short",day:"numeric"});
   el.innerHTML=`<div class="prephead"><span class="tnum">${a.name} prep</span><span class="tname">Lessons ${a.span} · test ${dl}</span></div><ol class="plan">${steps.map((d,k)=>{const done=d.done(i),now=k===cur;
     return`<li class="${done?"done":now?"now":""}"><span class="pday">Step ${k+1}</span><span class="pgoal">${d.goal}</span><span class="pact">${done?"✓ Done":now?(CUR===PREP_ID?"← now":`<button class="btn sm" data-open="${PREP_ID}">Start</button>`):""}</span></li>`}).join("")}</ol>`}
-if(!lsGet("mathlab3:t3chx-intro")){lsSet("mathlab3:current",PREP_ID);lsSet("mathlab3:t3chx-intro",1);lsSet("mathlab3:t3mid-intro",1)}
+if(!lsGet("mathlab3:t4mid-intro")){lsSet("mathlab3:current",PREP_ID);lsSet("mathlab3:t4mid-intro",1);lsSet("mathlab3:t3chx-intro",1);lsSet("mathlab3:t3mid-intro",1)}
 loadLocal();open(CUR);render();
 (async()=>{try{db=await window.claude?.use?.("db")}catch(e){db=null}if(!db)return;
   try{const snap=await db.collection("progress").get();let hasT2=false;
