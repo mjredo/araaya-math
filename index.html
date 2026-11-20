@@ -1457,24 +1457,24 @@ const R1=x=>Math.round(RD(x)*10)/10, R2=x=>Math.round(RD(x)*100)/100;
 const T4pct1=x=>fmt(R1(x))+"%";
 Object.assign(SK,{t4_pcdec:"Decimals and percents (quiz style)",t4_solve:"Percent problems with decimals (proportion or equation)",t4_wp:"Percent word problems (quiz style)"});
 Object.assign(LESSON,{t4_pcdec:"4-1",t4_solve:"4-2",t4_wp:"4-3"});
-Object.assign(VARS,{t4_pcdec:["topct","todec"],t4_solve:["partP","partE","pctP","pctE","over100","pctsmall"],t4_wp:["whole","split","tip","tiptotal","feeback","commback","newval","pctoff"]});
+Object.assign(VARS,{t4_pcdec:["topct","todec"],t4_solve:["partP","partE","pctP","pctE","over100","pctsmall"],t4_wp:["whole","split","tip","tiptotal","feeback","commback","newval","pctoff","capacity"]});
 LESSON_SKILLS["4-1"]=[...new Set([...(LESSON_SKILLS["4-1"]||[]),"t4_pcdec"])];
 LESSON_SKILLS["4-2"]=[...new Set([...(LESSON_SKILLS["4-2"]||[]),"t4_solve"])];
 LESSON_SKILLS["4-3"]=[...new Set([...(LESSON_SKILLS["4-3"]||[]),"t4_wp"])];
 const T4propPick=(r,good,bad)=>stp(r,{p:"Which proportion matches this problem?",good,bad,t:"part/whole = percent/100. The whole comes right after the word “of.” The part goes with “is.”"});
 Object.assign(G,{
 t4_pcdec(r,o){const v=o.v||pick(r,VARS.t4_pcdec);
-  if(v==="topct"){const k=int(r,0,9);const d=o.d??(k<5?RD(int(r,11,99)/100):k<7?RD(int(r,1,9)/100):RD(int(r,1,9)/10));const P=RD(d*100);
+  if(v==="topct"){const k=o.form==="dd"?0:o.form==="0d"?5:o.form==="t"?8:int(r,0,9);const d=o.d??(k<5?RD(pick(r,[11,12,13,14,15,16,17,18,19,21,23,27,29,31,34,37,39,41,43,46,47,52,53,58,61,63,67,68,71,73,76,79,82,84,87,89,91,93,94,97])/100):k<7?RD(int(r,1,9)/100):RD(int(r,1,9)/10));const P=RD(d*100);
     return T4it("t4_pcdec",o.lvl||"Basic",`Write ${fmt(d)} as a percent.`,T4p(P),[[T4p(RD(d*10)),"Move the decimal point 2 places to the right, not 1."],[T4p(d),"Just adding a % sign changes the value. Multiply by 100 first."],[T4p(RD(d*1000)),"Move the decimal point only 2 places."]],
       [stp(r,{p:"How do we change a decimal to a percent?",good:"Multiply by 100 (move the decimal point 2 places right)",bad:[["Divide by 100","That goes from a percent to a decimal, the other direction."],["Just add a % sign","Percent means out of 100, so the number must be 100 times bigger."]],
         t:`${fmt(d)} × 100 = ${fmt(P)}. If there aren't enough digits, add zeros: 0.2 = 0.20 → 20%.`,a:`${fmt(d)} × 100 = ?`,ans:P,h:"Move the decimal point 2 places to the right. Add a zero if you run out of digits."})],r)}
-  const p=o.p??(r()<0.5?RD(int(r,101,989)/10):int(r,11,99)),d=RD(p/100);
+  const p=o.p??(o.form==="dec"||(!o.form&&r()<0.5)?RD(pick(r,[1,2,3,4,5,6,7,8,9].map(t=>10*int(r,1,9)+t))+pick(r,[0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9])):pick(r,[12,18,24,35,45,56,64,72,75,85,96,98,33,41])),d=RD(p/100);
   return T4it("t4_pcdec",o.lvl||"Basic",`Write ${fmt(p)}% as a decimal.`,fmt(d),[[fmt(RD(p/10)),"Divide by 100, not 10 (move the decimal point 2 places)."],[fmt(p),"Dropping the % sign changes the value. Divide by 100."],[fmt(RD(p/1000)),"Move the decimal point only 2 places."]],[T4dec(r,p)],r)},
 
 t4_solve(r,o){const v=o.v||pick(r,VARS.t4_solve);const useP=/P$/.test(v)||v==="pctsmall";
   const how=useP?" (Use the proportion method.)":" (Use the percent equation.)";
   if(v==="partP"||v==="partE"){let p,W,part;for(let i=0;i<40;i++){p=o.p??pick(r,[61,75,11,9,23,36,48,57,64,82,14,7,85,92,33]);W=o.W??(r()<0.75?int(r,21,190):RD(int(r,205,995)/10));part=RD(p*W/100);if(RD(part*100)%1===0&&part!==Math.round(part))break}
-    const q=v==="partP"?`${p}% of ${fmt(W)} is what?`:`What is ${p}% of ${fmt(W)}?`,swap=R1(W*100/p);
+    const q=v==="partP"||o.phr==="is"?`${p}% of ${fmt(W)} is what?`:`What is ${p}% of ${fmt(W)}?`,swap=R1(W*100/p);
     const bad=[[fmt(RD(p*W)),"Don't forget to divide by 100."],[fmt(swap),`That puts ${fmt(W)} as the part. ${fmt(W)} comes after “of,” so it's the whole.`],[fmt(RD(part*10)),"Check the decimal point: divide by 100, not 10."],[fmt(RD(W-part)),`That's the other ${100-p}%.`]];
     const steps=v==="partP"?[T4propPick(r,`x/${fmt(W)} = ${p}/100`,[[`${fmt(W)}/x = ${p}/100`,`${fmt(W)} is the whole (it comes after “of”), so it goes on the bottom.`],[`x/${p} = ${fmt(W)}/100`,"Keep the part over the whole, and the percent over 100."]]),
         stp(r,{p:"How do we solve the proportion?",good:"Cross-multiply, then divide by 100",bad:[["Add across","Proportions are solved by cross-multiplying."],["Multiply straight across the top","Cross products multiply on the diagonals."]],t:`100 · x = ${p} × ${fmt(W)}.`,a:`${p} × ${fmt(W)} = ?`,ans:RD(p*W)}),
@@ -1483,8 +1483,8 @@ t4_solve(r,o){const v=o.v||pick(r,VARS.t4_solve);const useP=/P$/.test(v)||v==="p
         stp(r,{p:"Now multiply.",good:`${fmt(p/100)} × ${fmt(W)}`,bad:[[`${fmt(W)} ÷ ${fmt(p/100)}`,"“Of” means multiply."],[`${fmt(W)} − ${fmt(p/100)}`,"“Of” means multiply."]],t:"Multiply the decimal by the whole.",a:`${fmt(p/100)} × ${fmt(W)} = ?`,ans:part})];
     return T4it("t4_solve",o.lvl||"Basic",q+how,fmt(part),bad,steps,r)}
   // what percent
-  let W,m;for(let i=0;i<60;i++){W=o.W??(r()<0.7?int(r,31,199):RD(int(r,305,995)/10));
-    if(v==="over100")m=int(r,Math.ceil(W*1.05),Math.floor(W*1.7));else if(v==="pctsmall")m=RD(int(r,5,49)/10);else m=r()<0.7?int(r,Math.ceil(W*0.08),Math.floor(W*0.95)):RD(int(r,Math.ceil(W*0.8),Math.floor(W*9.5))/10);
+  let W,m;for(let i=0;i<60;i++){W=o.W??(o.decW||(!o.intW&&r()<0.3)?RD(int(r,305,995)/10):int(r,31,199));
+    if(v==="over100")m=int(r,Math.ceil(W*1.05),Math.floor(W*1.7));else if(v==="pctsmall")m=RD(int(r,5,49)/10);else m=o.decW||r()<0.7?int(r,Math.ceil(W*(o.decW?0.6:0.08)),Math.floor(W*0.95)):RD(int(r,Math.ceil(W*0.8),Math.floor(W*9.5))/10);
     const pc=m/W*100;if(m>0&&Math.abs(R1(pc)-pc)>1e-6&&R1(pc)!==R1(W/m*100))break}
   const pc=R1(m/W*100),dec=Math.round(m/W*1000)/1000;
   const q=`What percent of ${fmt(W)} is ${fmt(m)}? Round to the nearest tenth of a percent.`;
@@ -1536,8 +1536,13 @@ t4_wp(r,o){const v=o.v||pick(r,VARS.t4_wp);const nm=pick(r,T4nm);
     return T4it("t4_wp",o.lvl||"Word",`${c[0]} ${f(A)}. ${c[1]} ${p}%. ${c[2]}`,f(B),[[f(ch),`That's the amount of ${up?"increase":"decrease"}. ${up?"Add it to":"Subtract it from"} ${f(A)}.`],[f(up?A-ch:A+ch),up?"It went up, so the new amount is bigger.":"It went down, so the new amount is smaller."],[f(up?A+p:A-p),`${p}% is not ${p} ${batt?"mAh":"dollars"}.`],[f(up?RD(A+ch*10):RD(A-ch/10)),`Check the decimal: ${p}% = ${fmt(p/100)}.`]],
       [stp(r,{p:"What do we find first?",good:`The amount of change: ${p}% of ${f(A)}`,bad:[[`${f(A)} ÷ ${p}`,"A percent of a number means multiply by the decimal."],[`${p}% of the new amount`,"The percent is of the starting amount."]],t:`Change = ${fmt(p/100)} × ${fmt(A)}.`,a:"Change = ?",ans:ch,tol:batt?undefined:0.011}),
        stp(r,{p:"What do we do with the change?",good:up?`Add it to ${f(A)}`:`Subtract it from ${f(A)}`,bad:[[up?`Subtract it from ${f(A)}`:`Add it to ${f(A)}`,up?"An increase makes it bigger.":"A decrease makes it smaller."],["Nothing, the change is the answer","The question asks for the new amount."]],t:up?"New = start + change.":"New = start − change.",a:"New amount = ?",ans:B,tol:batt?undefined:0.011})],r)}
+  if(v==="capacity"){const C=[["A city water reservoir holds","gallons of water when full. After a dry summer, the reservoir is at","capacity. How many gallons of water are in the reservoir now?",10000],["A football stadium has","seats. For the home opener,","of the seats were filled. How many seats were filled?",100],["A school's solar panels can make","kilowatt-hours of electricity on a sunny day. On a cloudy day they made","of that. How many kilowatt-hours is that?",10]];
+    const c=C[o.ctx??int(r,0,C.length-1)];let p,W,part;for(let i=0;i<50;i++){p=o.p??pick(r,[62,48,76,35,84,57,68,43,91]);W=o.W??c[3]*int(r,25,150);part=RD(p*W/100);if(Number.isInteger(part))break}
+    return T4it("t4_wp",o.lvl||"Word",`${c[0]} ${fmt(W)} ${c[1]} ${p}% ${c[2]}`,fmt(part),[[fmt(RD(W-part)),`That's the other ${100-p}%.`],[fmt(RD(p*W)),"Divide by 100 too."],[fmt(Math.round(W*100/p)),`That puts ${fmt(W)} as the part. ${fmt(W)} is the whole (full) amount.`],[fmt(RD(part/10)),`Check the decimal: ${p}% = ${fmt(p/100)}.`]],
+      [T4propPick(r,`x/${fmt(W)} = ${p}/100`,[[`${fmt(W)}/x = ${p}/100`,`${fmt(W)} is the whole, so it goes on the bottom.`],[`x/${p} = ${fmt(W)}/100`,"Keep the part over the whole, and the percent over 100."]]),
+       stp(r,{p:"How do we solve it?",good:"Cross-multiply, then divide by 100",bad:[["Divide by the percent","Cross-multiply first."],["Add across","Proportions are solved by cross-multiplying."]],t:`100 · x = ${p} × ${fmt(W)}.`,a:"x = ?",ans:part})],r)}
   // pctoff: percent discount from old and new price
-  let A,p;for(let i=0;i<40;i++){A=o.A??50*int(r,4,40);p=o.p??pick(r,[15,20,25,30,35,40,12,18]);if(Number.isInteger(A*p/100))break}
+  let A,p;for(let i=0;i<40;i++){A=o.A??50*int(r,4,40)+(r()<0.3?1000:0);p=o.p??pick(r,[15,20,25,30,35,40,12,18]);if(Number.isInteger(A*p/100))break}
   const B=RD(A*(100-p)/100),d=RD(A-B),it=pick(r,["gaming laptop","bike","guitar","tablet","pair of skis"]);
   return T4it("t4_wp",o.lvl||"Word",`A ${it} normally sells for ${T4m(A)}, but a discount lowers the price to ${T4m(B)}. By what percent was the price discounted?`,T4p(p),[[T4p(100-p),`That's the percent you still pay. The discount is the part taken off.`],[T4pct1(d/B*100),`Divide by the ORIGINAL price, ${T4m(A)}.`],[T4p(d),"That's the dollar amount of the discount, not the percent."],[T4p(RD(p/100)),"Multiply the decimal by 100."]],
     [stp(r,{p:"What do we find first?",good:`The amount taken off: ${T4m(A)} − ${T4m(B)}`,bad:[[`${T4m(B)} ÷ ${T4m(A)}`,"That compares the whole new price, not the discount."],[`${T4m(A)} + ${T4m(B)}`,"Adding doesn't show how much was taken off."]],t:"Discount = original − sale price.",a:"Discount = ? (dollars)",ans:d}),
@@ -1547,12 +1552,16 @@ t4_wp(r,o){const v=o.v||pick(r,VARS.t4_wp);const nm=pick(r,T4nm);
 const T4MID_FIRST=[["t4_pctof","basic"],["t4_pctof","over100"],["t4_pctof","under1"],["t4_pctof","word"],["t4_convert","todec"],["t4_convert","fromdec"],["t4_convert","tofrac"],
  ["t4_prop","setup"],["t4_prop","whole"],["t4_prop","pct"],["t4_propword","whole"],["t4_propword","pct"],["t4_propword","part"],
  ["t4_eq","write"],["t4_eq","whole"],["t4_eq","pct"],["t4_eq","word"],["t4_tax","tax"],["t4_tax","tip"],["t4_tax","commission"]];
-const T4MID_TEST=[ // mirrors the teacher's "4.1 - 4.3 Practice Quiz" (Nov 19): p.1 conversions, p.2 eight solve problems (odd = proportion, even = equation), then word problems
- ["1","t4_pcdec","topct"],["2","t4_pcdec","topct"],["3","t4_pcdec","topct"],["4","t4_pcdec","topct"],["5","t4_pcdec","todec"],["6","t4_pcdec","todec"],["7","t4_pcdec","todec"],["8","t4_pcdec","todec"],
- ["9","t4_solve","partP"],["10","t4_solve","over100"],["11","t4_solve","partP"],["12","t4_solve","partE"],["13","t4_solve","pctsmall"],["14","t4_solve","pctE"],["15","t4_solve","pctP"],["16","t4_solve","partE"],
- ["W1","t4_wp","whole"],["W2","t4_wp","split"],["W3","t4_wp","tiptotal"],["W4","t4_wp","feeback"],["W5","t4_wp","newval"],["W6","t4_wp","commback"],["W7","t4_wp","pctoff"],["W8","t4_wp","split"]];
+const T4MID_TEST=[ // one-to-one with the teacher's "4.1 - 4.3 Practice Quiz" (Nov 19). Pages 1–2: #1–16 (odd = proportion, even = equation). Word problems W1–W15 in his order; his two-part questions are a/b with the same story.
+ ["1","t4_pcdec","topct",{form:"dd"}],["2","t4_pcdec","topct",{form:"0d"}],["3","t4_pcdec","topct",{form:"dd"}],["4","t4_pcdec","topct",{form:"t"}],
+ ["5","t4_pcdec","todec",{form:"dec"}],["6","t4_pcdec","todec",{form:"dec"}],["7","t4_pcdec","todec",{form:"whole"}],["8","t4_pcdec","todec",{form:"whole"}],
+ ["9","t4_solve","partP"],["10","t4_solve","over100",{intW:1}],["11","t4_solve","partP"],["12","t4_solve","partE",{phr:"is"}],["13","t4_solve","pctsmall",{intW:1}],["14","t4_solve","pctE",{decW:1}],["15","t4_solve","pctP",{intW:1}],["16","t4_solve","partE"],
+ ["W1","t4_wp","whole",{ctx:0}],["W2a","t4_wp","split",{ctx:0,ask:1,key:"W2"}],["W2b","t4_wp","split",{ctx:0,ask:0,key:"W2"}],["W3a","t4_wp","tip",{ctx:0,key:"W3"}],["W3b","t4_wp","tiptotal",{ctx:0,key:"W3"}],
+ ["W4","t4_wp","feeback"],["W5","t4_wp","newval",{up:false,ctx:1}],["W6","t4_wp","newval",{up:true,ctx:0}],["W7","t4_wp","whole",{ctx:1}],["W8","t4_wp","newval",{up:false,ctx:0}],
+ ["W9","t4_wp","capacity",{ctx:0}],["W10","t4_wp","commback"],["W11","t4_wp","newval",{up:true,ctx:1}],["W12","t4_wp","whole",{ctx:2}],["W13a","t4_wp","tip",{ctx:1,key:"W13"}],["W13b","t4_wp","tiptotal",{ctx:1,key:"W13"}],
+ ["W14","t4_wp","pctoff"],["W15a","t4_wp","split",{ctx:1,ask:0,key:"W15"}],["W15b","t4_wp","split",{ctx:1,ask:2,key:"W15"}]];
 function midFirstSpecs(id){const L=(AM(id)||{}).firstL||T3MID_FIRST;return L.map(([g,v],i)=>({id:`r0-${i+1}`,label:String(i+1),gen:g,o:{v},seed:`${id}-first-${i}`}))}
-function midTestSpecs(id,no){const L=(AM(id)||{}).testL||T3MID_TEST;return L.map(([lab,g,v])=>({id:`r${no}-${lab}`,label:lab,gen:g,o:{v},seed:`${id}-r${no}-t-${lab}`}))}
+function midTestSpecs(id,no){const L=(AM(id)||{}).testL||T3MID_TEST;return L.map(([lab,g,v,x])=>({id:`r${no}-${lab}`,label:lab,gen:g,o:Object.assign({v},x||{}),seed:`${id}-r${no}-t-${(x&&x.key)||lab}`}))}
 
 // Topic 4: Analyze and Solve Percent Problems
 Object.assign(SK,{t4_pctof:"Percent of a number (incl. over 100% and under 1%)",t4_convert:"Percents, decimals and fractions",
@@ -4472,7 +4481,7 @@ for(const T of COURSE){const L=T.lessons.map(l=>l[0]);
   ASSESS.push({id:`T${T.t}-Q1`,topic:T.t,kind:"quiz",name:`Topic ${T.t} Quiz 1`,lessons:T.q1,n:20,min:30});
   ASSESS.push({id:`T${T.t}-Q2`,topic:T.t,kind:"quiz",name:`Topic ${T.t} Quiz 2`,lessons:T.q2,n:20,min:30});
   ASSESS.push({id:`T${T.t}-CH`,topic:T.t,kind:"chapter",name:`Topic ${T.t} Chapter Test`,lessons:L,n:25,min:40})}
-ASSESS.push({id:"T4-MID",topic:4,kind:"mid",card:"Mid-Chapter Test",name:"Topic 4 Mid-Chapter Test",lessons:["4-1","4-2","4-3"],span:"4-1 to 4-3",teacher:"the teacher\u2019s 4.1\u20134.3 Practice Quiz",firstL:T4MID_FIRST,testL:T4MID_TEST,n:T4MID_TEST.length,first:T4MID_FIRST.length,min:45,need:2,strNeed:2,retests:3,timeRef:true,date:"2026-11-20"});
+ASSESS.push({id:"T4-MID",topic:4,kind:"mid",card:"Mid-Chapter Test",name:"Topic 4 Mid-Chapter Test",lessons:["4-1","4-2","4-3"],span:"4-1 to 4-3",teacher:"the teacher\u2019s 4.1\u20134.3 Practice Quiz",firstL:T4MID_FIRST,testL:T4MID_TEST,n:T4MID_TEST.length,first:T4MID_FIRST.length,min:60,need:2,strNeed:2,retests:3,timeRef:true,date:"2026-11-20"});
 ASSESS.push({id:"T3-CHX",topic:3,kind:"mid",card:"Chapter Test prep",name:"Topic 3 Chapter Test",lessons:["3-1","3-2","3-3","3-4","3-5","3-6"],span:"3-1 to 3-6",teacher:"the 3.1–3.5 practice quiz, plus lesson 3-6 problems",firstL:T3CH_FIRST,testL:T3CH_TEST,n:T3CH_TEST.length,first:T3CH_FIRST.length,min:45,need:2,strNeed:2,retests:3,timeRef:true,date:"2026-11-13"});
 ASSESS.push({id:"T3-MID",topic:3,kind:"mid",card:"Mid-Chapter Test",span:"3-1 to 3-5",teacher:"the teacher's Practice Quiz 3.1–3.5",firstL:T3MID_FIRST,testL:T3MID_TEST,name:"Topic 3 Mid-Chapter Test",lessons:["3-1","3-2","3-3","3-4","3-5"],n:T3MID_TEST.length,first:T3MID_FIRST.length,min:40,need:2,strNeed:2,retests:3,timeRef:true});
 ASSESS.push({id:"T2-WU",topic:2,kind:"warmup",name:"Unit 2 Warm-up",lessons:COURSE.find(t=>t.t===2).lessons.map(l=>l[0]),n:10,min:15});
@@ -4847,9 +4856,10 @@ async function uploadGraded(){const m=document.getElementById("gmsg"),say=(t,ok)
     await db.doc("graded/"+id).set(meta);await loadGraded();renderGraded();pushRecord();const m2=document.getElementById("gmsg");if(m2)m2.innerHTML=`<div class="fb ok">Uploaded ${meta.files.length} file(s). Ask Claude to review it.</div>`}
   catch(e){say("Couldn't upload: "+String(e.message||e)+". Check the connection and try again.")}}
 // One-time (Nov 19): T4-MID practice tests now follow the teacher's 4.1–4.3 practice quiz. Rebuild an unfinished practice test with the new layout and clear the "ready" mark so new tests count.
-function fixT4(){const st=STORE["T4-MID"];if(!st||!st.rounds||st.t4quiz)return false;const L=st.rounds.length-1,R=st.rounds[L];
-  if(R&&R.type==="test"&&!R.finishedAt){R.specs=midTestSpecs("T4-MID",R.no).map(x=>Object.assign(x,{seed:x.seed+"-q"}));R.items={};R.startedAt=Date.now();st.cur={r:L,q:0}}
-  st.t4quiz=1;st.proficient=false;st.streak=0;(st.overrides=st.overrides||[]).push({at:Date.now(),from:R?R.type:"",round:L,to:"test",by:"Claude: switched to the teacher-style practice test"});
+function fixT4(){const st=STORE["T4-MID"];if(!st||!st.rounds)return false;let ch=false;const L=st.rounds.length-1,R=st.rounds[L],labs=T4MID_TEST.map(x=>x[0]).join(",");
+  if(R&&R.type==="test"&&!R.finishedAt&&(R.specs||[]).map(x=>x.label).join(",")!==labs&&Object.values(R.items||{}).filter(x=>x&&x.tries).length<=3){R.specs=midTestSpecs("T4-MID",R.no).map(x=>Object.assign(x,{seed:x.seed+"-q2"}));R.items={};R.startedAt=Date.now();st.cur={r:L,q:0};ch=true}
+  if(!st.t4quiz){st.t4quiz=1;st.proficient=false;st.streak=0;ch=true}
+  if(!ch)return false;(st.overrides=st.overrides||[]).push({at:Date.now(),from:R?R.type:"",round:L,to:"test",by:"Claude: teacher-style practice test"});
   st.updatedAt=Date.now();lsSet("mathlab2:"+storeKey("T4-MID"),st);for(const k in ITEMS)if(k.startsWith("T4-MID:"))delete ITEMS[k];return true}
 // readable work record for Claude: results/record (WebFetch <worker>/c/results)
 let recT=null;function pushRecord(){if(!db)return;clearTimeout(recT);recT=setTimeout(async()=>{try{await db.doc("results/record").set({text:workRecordText(),current:CUR,updatedAt:new Date().toISOString()})}catch(e){}},1500)}
